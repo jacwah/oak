@@ -1,5 +1,6 @@
-use std::path::Path;
 use std::borrow::Cow;
+use std::fmt::Display;
+use std::path::Path;
 use super::TreeProcessor;
 
 struct Dir {
@@ -31,7 +32,7 @@ impl PrintProcessor {
         }
     }
 
-    fn print_entry(&mut self, name: &str) {
+    fn print_entry<T: Display>(&mut self, name: &T) {
         let vertical_line = "│   ";
         let branched_line = "├── ";
         let terminal_line = "└── ";
@@ -79,18 +80,13 @@ fn file_name_from_path(path: &Path) -> Cow<str> {
 impl TreeProcessor for PrintProcessor {
 
     fn open_dir(&mut self, path: &Path, num_entries: usize) {
-        let rel_pathstr = &format!("{}", path.display());
-        let mut file_name = file_name_from_path(path);
-        let file_name = file_name.to_mut();
-
         // Print the relative path to the root dir
-        let name = if self.dir_stack.is_empty() {
-            rel_pathstr
+        if self.dir_stack.is_empty() {
+            self.print_entry(&path.display());
         } else {
-            file_name
+            self.print_entry(file_name_from_path(path).to_mut());
         };
 
-        self.print_entry(name);
         self.dir_stack.push(Dir::new(num_entries));
         self.num_dirs += 1;
     }
@@ -109,4 +105,4 @@ impl TreeProcessor for PrintProcessor {
     }
 
 }
-        
+
