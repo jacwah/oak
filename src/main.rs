@@ -17,7 +17,7 @@ fn main() {
         .get_matches();
 
     let dir = Path::new(argv_matches.value_of("DIR").unwrap_or("."));
- 
+
     match tree::process(dir, &mut processor::PrintProcessor::new()) {
         Ok(_) => (),
         Err(err) => println!("error: {}", err),

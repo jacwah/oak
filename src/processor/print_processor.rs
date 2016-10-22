@@ -1,3 +1,5 @@
+use std::path::Path;
+use std::borrow::Cow;
 use super::TreeProcessor;
 
 struct Dir {
@@ -68,9 +70,26 @@ impl PrintProcessor {
 
 }
 
+fn file_name_from_path(path: &Path) -> Cow<str> {
+    // Using unwrap here should be safe as long as all paths processed by this
+    // function are generated from read_dir
+    path.file_name().unwrap().to_string_lossy()
+}
+
 impl TreeProcessor for PrintProcessor {
-    
-    fn open_dir(&mut self, name: &str, num_entries: usize) {
+
+    fn open_dir(&mut self, path: &Path, num_entries: usize) {
+        let rel_pathstr = &format!("{}", path.display());
+        let mut file_name = file_name_from_path(path);
+        let file_name = file_name.to_mut();
+
+        // Print the relative path to the root dir
+        let name = if self.dir_stack.is_empty() {
+            rel_pathstr
+        } else {
+            file_name
+        };
+
         self.print_entry(name);
         self.dir_stack.push(Dir::new(num_entries));
         self.num_dirs += 1;
@@ -84,8 +103,8 @@ impl TreeProcessor for PrintProcessor {
         }
     }
 
-    fn file(&mut self, name: &str) {
-        self.print_entry(name);
+    fn file(&mut self, path: &Path) {
+        self.print_entry(file_name_from_path(path).to_mut());
         self.num_files += 1;
     }
 
