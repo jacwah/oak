@@ -23,9 +23,28 @@ impl PrintProcessor {
         PrintProcessor { dir_stack: Vec::new() }
     }
 
-    fn print_entry(&self, name: &str) {
-        for _ in 0..self.dir_stack.len() {
-            print!("    ");
+    fn print_entry(&mut self, name: &str) {
+        let vertical_line = "│   ";
+        let branched_line = "├── ";
+        let terminal_line = "└── ";
+        let empty_line    = "    ";
+
+        for (i, dir) in self.dir_stack.iter().enumerate() {
+            if dir.num_processed == dir.num_entries {
+                print!("{}", empty_line);
+            } else if i == self.dir_stack.len() - 1 { // if the leaf dir
+                if dir.num_processed == dir.num_entries - 1 {
+                    print!("{}", terminal_line);
+                } else {
+                    print!("{}", branched_line);
+                }
+            } else {
+                print!("{}", vertical_line);
+            }
+        }
+
+        if let Some(leaf_dir) = self.dir_stack.last_mut() {
+            leaf_dir.num_processed += 1;
         }
 
         println!("{}", name);
