@@ -1,21 +1,10 @@
 #[macro_use]
 extern crate clap;
 
-use std::io;
-use std::fs;
-use std::path::Path;
+mod tree;
+mod processor;
 
-fn list_dir(dir: &Path) -> io::Result<()> {
-    for entry in try!(fs::read_dir(dir)) {
-        let entry = try!(entry);
-        let path = entry.path();
-        match path.file_name() {
-            Some(name) => println!("{}", name.to_string_lossy()),
-            None => (),
-        }
-    }
-    Ok(())
-}
+use std::path::Path;
 
 fn main() {
     let argv_matches = clap::App::new("etree")
@@ -29,8 +18,8 @@ fn main() {
 
     let dir = Path::new(argv_matches.value_of("DIR").unwrap_or("."));
  
-    match list_dir(dir) {
+    match tree::process(dir, &processor::DummyProcessor::new()) {
         Ok(_) => (),
-        Err(err) => println!("{}", err),
+        Err(err) => println!("error: {}", err),
     }
 }
