@@ -24,8 +24,4 @@ impl TreeProcessor for DummyProcessor {
         println!("file({})", name);
     }
 
-    fn done(&self) {
-        println!("done()");
-    }
-
 }
