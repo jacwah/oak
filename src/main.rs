@@ -7,6 +7,10 @@ mod processor;
 use std::path::Path;
 use std::os::unix::ffi::OsStrExt;
 
+fn filter_none(_path: &Path) -> bool {
+    true
+}
+
 fn filter_hidden_files(path: &Path) -> bool {
     // Is this implementation sound?
     static DOT: u8 = '.' as u8;
@@ -26,13 +30,22 @@ fn main() {
         .arg(clap::Arg::with_name("DIR")
             .help("The directory to list")
             .index(1))
+        .arg(clap::Arg::with_name("a")
+             .help("Show hidden files")
+             .short("a"))
         .get_matches();
 
     let dir = Path::new(argv_matches.value_of("DIR").unwrap_or("."));
 
+    let filter = if argv_matches.is_present("a") {
+        filter_none
+    } else {
+        filter_hidden_files
+    };
+
     match tree::process(dir,
                         &mut processor::PrintProcessor::new(),
-                        filter_hidden_files) {
+                        filter) {
         Ok(_) => (),
         Err(err) => println!("error: {}", err),
     }
