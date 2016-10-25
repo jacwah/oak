@@ -16,10 +16,16 @@ impl Dir {
  
 }
 
+pub enum SummaryFormat {
+    DirCount,
+    DirAndFileCount,
+}
+
 pub struct PrintProcessor {
     dir_stack: Vec<Dir>,
     num_dirs: usize,
     num_files: usize,
+    summary_format: SummaryFormat,
 }
 
 impl PrintProcessor {
@@ -29,7 +35,12 @@ impl PrintProcessor {
             dir_stack: Vec::new(),
             num_dirs: 0,
             num_files: 0,
+            summary_format: SummaryFormat::DirAndFileCount,
         }
+    }
+
+    pub fn set_summary_format(&mut self, format: SummaryFormat) {
+        self.summary_format = format;
     }
 
     fn print_entry<T: Display>(&mut self, name: &T) {
@@ -66,7 +77,10 @@ impl PrintProcessor {
             n @ _ => n - 1,
         };
 
-        println!("\n{} directories, {} files", dirs, self.num_files);
+        match self.summary_format {
+            SummaryFormat::DirAndFileCount => println!("\n{} directories, {} files", dirs, self.num_files),
+            SummaryFormat::DirCount => println!("\n{} directories", dirs),
+        }
     }
 
 }

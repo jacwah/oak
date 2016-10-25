@@ -6,6 +6,7 @@ mod processor;
 
 use std::path::Path;
 use std::os::unix::ffi::OsStrExt;
+use processor::print_processor::SummaryFormat;
 
 fn filter_hidden_files(path: &Path) -> bool {
     // Is this implementation sound?
@@ -48,6 +49,8 @@ fn main() {
 
     let mut filters: Vec<&Fn(&Path) -> bool> = Vec::new();
 
+    let mut procor = processor::PrintProcessor::new();
+
     if !argv_matches.is_present("a") {
         //filters.push(&filter_hidden_files);
         filters.push(filter_hidden_files_ref);
@@ -56,10 +59,11 @@ fn main() {
     if argv_matches.is_present("d") {
         //filters.push(&filter_non_dirs);
         filters.push(filter_non_dirs_ref);
+        procor.set_summary_format(SummaryFormat::DirCount);
     }
 
     match tree::process(&dir,
-                        &mut processor::PrintProcessor::new(),
+                        &mut procor,
                         &filters) {
         Ok(_) => (),
         Err(err) => println!("error: {}", err),
