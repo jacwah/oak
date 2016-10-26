@@ -2,6 +2,7 @@
 name = "etree"
 version = "0.1.0"
 authors = ["Jacob Wahlgren <jacob.wahlgren@gmail.com>"]
+license = "MPL-2.0"
 
 [dependencies]
 clap = "2"
