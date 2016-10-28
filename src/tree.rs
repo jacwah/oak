@@ -2,7 +2,7 @@ use std::io;
 use std::fs::{self, DirEntry};
 use std::path::Path;
 use std::ops::Fn;
-use processor::TreeProcessor;
+use super::tree_processor::TreeProcessor;
 
 pub fn process<T, F>(dir: &Path, procor: &mut T, filters: &Vec<F>) -> io::Result<()>
     where T: TreeProcessor,

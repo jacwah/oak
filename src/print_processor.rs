@@ -1,7 +1,7 @@
 use std::borrow::Cow;
 use std::fmt::Display;
 use std::path::Path;
-use super::TreeProcessor;
+use super::tree_processor::TreeProcessor;
 
 struct Dir {
     num_entries: usize,

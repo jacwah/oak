@@ -1,5 +1,5 @@
 use std::path::Path;
-use super::TreeProcessor;
+use super::tree_processor::TreeProcessor;
 
 #[allow(dead_code)]
 pub struct DummyProcessor;

@@ -1,12 +1,11 @@
 #[macro_use]
 extern crate clap;
-
-mod tree;
-mod processor;
+extern crate ntree;
 
 use std::path::Path;
 use std::os::unix::ffi::OsStrExt;
-use processor::print_processor::SummaryFormat;
+use ntree::print_processor::{PrintProcessor, SummaryFormat};
+use ntree::tree;
 
 fn filter_hidden_files(path: &Path) -> bool {
     // Is this implementation sound?
@@ -49,7 +48,7 @@ fn main() {
 
     let mut filters: Vec<&Fn(&Path) -> bool> = Vec::new();
 
-    let mut procor = processor::PrintProcessor::new();
+    let mut procor = PrintProcessor::new();
 
     if !argv_matches.is_present("a") {
         //filters.push(&filter_hidden_files);
