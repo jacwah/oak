@@ -27,10 +27,10 @@ fn filter_non_dirs(path: &Path) -> bool {
 }
 
 fn main() {
-    let argv_matches = clap::App::new("etree")
+    let argv_matches = clap::App::new("ntree")
         .version(crate_version!())
         .author(crate_authors!())
-        .about("Extended tree")
+        .about("New tree -- a modern reimplementation of tree.")
         .arg(clap::Arg::with_name("DIR")
             .help("The directory to list")
             .index(1))
