@@ -3,27 +3,9 @@ extern crate clap;
 extern crate ntree;
 
 use std::path::Path;
-use std::os::unix::ffi::OsStrExt;
 use ntree::print_processor::{PrintProcessor, SummaryFormat};
 use ntree::tree;
-
-fn filter_hidden_files(path: &Path) -> bool {
-    // Is this implementation sound?
-    static DOT: u8 = '.' as u8;
-    let maybe_name = path.file_name();
-
-    match maybe_name {
-        Some(name) => name.as_bytes()[0] != DOT,
-        _ => false,
-    }
-}
-
-fn filter_non_dirs(path: &Path) -> bool {
-    match path.metadata() {
-        Ok(data) => data.is_dir(),
-        Err(_) => false,
-    }
-}
+use ntree::filters::{filter_hidden_files, filter_non_dirs};
 
 fn main() {
     let argv_matches = clap::App::new("ntree")
