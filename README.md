@@ -33,7 +33,7 @@ I started learning the Rust programming language and needed a project, a
 
 Some new features in `ntree` include:
 
-- Filter git-ignored files with `-g` (TBD).
+- Filter git-ignored files with `-g`.
 - Foolproof `-P` and `-I` semantics. Separating patterns with `|` can cause
 trouble when filenames include the pipe character itself. `ntree` instead
 accepts `-P` and `-I` being applied multiple times with different arguments
