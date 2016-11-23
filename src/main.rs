@@ -53,8 +53,8 @@ fn main() {
 
     if argv_matches.is_present("git-ignore") {
         match filter_gitignore_maybe {
-            Ok(_) => {
-                filter_gitignore = filter_gitignore_maybe.unwrap();
+            Ok(filter) => {
+                filter_gitignore = filter;
                 filter_gitignore_clos = |p: &Path| filter_gitignore.filter(p);
                 filter_gitignore_ref = &filter_gitignore_clos;
                 filters.push(filter_gitignore_ref);
@@ -66,13 +66,8 @@ fn main() {
         }
     }
 
-    match tree::process(&dir,
-                        &mut procor,
-                        &filters) {
-        Ok(_) => (),
-        Err(err) => {
-            println!("error: {}", err);
-            process::exit(1);
-        }
+    if let Err(err) = tree::process(&dir, &mut procor, &filters) {
+        println!("error: {}", err);
+        process::exit(1);
     }
 }

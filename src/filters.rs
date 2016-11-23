@@ -10,37 +10,26 @@ pub struct GitignoreFilter {
 
 impl GitignoreFilter {
     pub fn new(path: &Path) -> Result<Self, git2::Error> {
-        match Repository::discover(path) {
-            Ok(repo) => Ok(GitignoreFilter { repo: repo }),
-            Err(err) => Err(err),
-        }
+        Repository::discover(path)
+            .map(|repo| GitignoreFilter { repo: repo })
     }
 
     pub fn filter(&self, path: &Path) -> bool {
         // ./filename paths doesn't seem to work with should_ignore
-        let path = path.canonicalize().unwrap();
-        match self.repo.status_should_ignore(&path) {
-            Ok(result) => !result,
-            Err(_) => false,
-        }
+        let path = path.canonicalize().expect("Failed to canonicalize path");
+        !self.repo.status_should_ignore(&path).unwrap_or(true)
     }
 }
 
 pub fn filter_hidden_files(path: &Path) -> bool {
-    // Is this implementation sound?
-    static DOT: u8 = '.' as u8;
-    let maybe_name = path.file_name();
-
-    match maybe_name {
-        Some(name) => name.as_bytes()[0] != DOT,
-        _ => false,
-    }
+    path.file_name()
+        .map(|name| !name.as_bytes().starts_with(b"."))
+        .unwrap_or(false)
 }
 
 pub fn filter_non_dirs(path: &Path) -> bool {
-    match path.metadata() {
-        Ok(data) => data.is_dir(),
-        Err(_) => false,
-    }
+    path.metadata()
+        .map(|data| data.is_dir())
+        .unwrap_or(false)
 }
 
