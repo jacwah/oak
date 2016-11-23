@@ -1,7 +1,6 @@
 extern crate git2;
 
 use std::path::Path;
-use std::os::unix::ffi::OsStrExt;
 use self::git2::Repository;
 
 pub struct GitignoreFilter {
@@ -22,9 +21,14 @@ impl GitignoreFilter {
 }
 
 pub fn filter_hidden_files(path: &Path) -> bool {
+    // Default to not filter if filename can't be retrieved or converted to utf-8
     path.file_name()
-        .map(|name| !name.as_bytes().starts_with(b"."))
-        .unwrap_or(false)
+        .map(|name| {
+            name.to_str()
+                .map(|str| !str.starts_with("."))
+                .unwrap_or(true)
+            })
+        .unwrap_or(true)
 }
 
 pub fn filter_non_dirs(path: &Path) -> bool {
