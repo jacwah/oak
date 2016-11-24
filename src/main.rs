@@ -4,9 +4,16 @@ extern crate ntree;
 
 use std::path::Path;
 use std::process;
+use std::io::{Write, stderr};
+use std::fmt::Display;
 use ntree::print_processor::{PrintProcessor, SummaryFormat};
 use ntree::tree;
 use ntree::filters::{filter_hidden_files, filter_non_dirs, GitignoreFilter};
+
+fn die(message: &Display) -> ! {
+    writeln!(&mut stderr(), "error: {}", message).expect("Failed to write to stderr");
+    process::exit(1);
+}
 
 fn main() {
     let argv_matches = clap::App::new("ntree")
@@ -60,14 +67,12 @@ fn main() {
                 filters.push(filter_gitignore_ref);
             },
             Err(err) => {
-                println!("{}", err);
-                process::exit(1);
+                die(&err);
             },
         }
     }
 
     if let Err(err) = tree::process(&dir, &mut procor, &filters) {
-        println!("error: {}", err);
-        process::exit(1);
+        die(&err);
     }
 }
