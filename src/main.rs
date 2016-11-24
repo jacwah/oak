@@ -19,18 +19,19 @@ fn main() {
     let argv_matches = clap::App::new("ntree")
         .version(crate_version!())
         .author(crate_authors!())
-        .about("New tree -- a modern reimplementation of tree.")
+        .about("Tree for the modern user.")
         .arg(clap::Arg::with_name("DIR")
-            .help("The directory to list")
+            .help("The directory to list, defaults to cwd")
             .index(1))
-        .arg(clap::Arg::with_name("a")
+        .arg(clap::Arg::with_name("show-hidden")
              .help("Show hidden files")
              .short("a"))
-        .arg(clap::Arg::with_name("d")
+        .arg(clap::Arg::with_name("only-dirs")
              .help("List directories only")
              .short("d"))
-        .arg(clap::Arg::with_name("git-ignore")
-             .help("Do not list git ignored files")
+        .arg(clap::Arg::with_name("no-git-ignore")
+             .help("Do not exclude gitignored files")
+             .long("no-git")
              .short("g"))
         .get_matches();
 
@@ -38,16 +39,16 @@ fn main() {
     let mut filters = FilterAggregate::default();
     let mut procor = PrintProcessor::new();
 
-    if !argv_matches.is_present("a") {
+    if !argv_matches.is_present("show-hidden") {
         filters.push(filter_hidden_files);
     }
 
-    if argv_matches.is_present("d") {
+    if argv_matches.is_present("only-dirs") {
         filters.push(filter_non_dirs);
         procor.set_summary_format(SummaryFormat::DirCount);
     }
 
-    if argv_matches.is_present("git-ignore") {
+    if !argv_matches.is_present("no-git-ignore") {
         match GitignoreFilter::new(dir) {
             Ok(filter) => {
                 filters.push(filter);
