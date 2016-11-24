@@ -8,7 +8,7 @@ use std::io::{Write, stderr};
 use std::fmt::Display;
 use ntree::print_processor::{PrintProcessor, SummaryFormat};
 use ntree::tree;
-use ntree::filters::{filter_hidden_files, filter_non_dirs, GitignoreFilter};
+use ntree::filters::{FilterAggregate, filter_hidden_files, filter_non_dirs, GitignoreFilter};
 
 fn die(message: &Display) -> ! {
     writeln!(&mut stderr(), "error: {}", message).expect("Failed to write to stderr");
@@ -35,36 +35,22 @@ fn main() {
         .get_matches();
 
     let dir = Path::new(argv_matches.value_of("DIR").unwrap_or("."));
-
-    let filter_hidden_files_ref = &filter_hidden_files;
-    let filter_non_dirs_ref = &filter_non_dirs;
-    let filter_gitignore_maybe = GitignoreFilter::new(dir);
-    let filter_gitignore: GitignoreFilter;
-    let filter_gitignore_clos;
-    let filter_gitignore_ref;
-
-    let mut filters: Vec<&Fn(&Path) -> bool> = Vec::new();
-
+    let mut filters = FilterAggregate::default();
     let mut procor = PrintProcessor::new();
 
     if !argv_matches.is_present("a") {
-        //filters.push(&filter_hidden_files);
-        filters.push(filter_hidden_files_ref);
+        filters.push(filter_hidden_files);
     }
 
     if argv_matches.is_present("d") {
-        //filters.push(&filter_non_dirs);
-        filters.push(filter_non_dirs_ref);
+        filters.push(filter_non_dirs);
         procor.set_summary_format(SummaryFormat::DirCount);
     }
 
     if argv_matches.is_present("git-ignore") {
-        match filter_gitignore_maybe {
+        match GitignoreFilter::new(dir) {
             Ok(filter) => {
-                filter_gitignore = filter;
-                filter_gitignore_clos = |p: &Path| filter_gitignore.filter(p);
-                filter_gitignore_ref = &filter_gitignore_clos;
-                filters.push(filter_gitignore_ref);
+                filters.push(filter);
             },
             Err(err) => {
                 die(&err);
