@@ -2,15 +2,19 @@ extern crate git2;
 
 use std::path::Path;
 use self::git2::Repository;
+use std::result;
+use std::error::Error;
+
+type Result = result::Result<bool, Box<Error>>;
 
 pub trait FileFilter {
-    fn filter(&self, path: &Path) -> bool;
+    fn filter(&self, path: &Path) -> Result;
 }
 
 impl<F> FileFilter for F
-    where F: Fn(&Path) -> bool
+    where F: Fn(&Path) -> Result
 {
-    fn filter(&self, path: &Path) -> bool {
+    fn filter(&self, path: &Path) -> Result {
         (self)(path)
     }
 }
@@ -34,8 +38,13 @@ impl Default for FilterAggregate {
 }
 
 impl FileFilter for FilterAggregate {
-    fn filter(&self, path: &Path) -> bool {
-        self.filters.iter().all(|f| f.filter(path))
+    fn filter(&self, path: &Path) -> Result {
+        for f in self.filters.iter() {
+            if try!(f.filter(path)) == false {
+                return Ok(false);
+            }
+        }
+        Ok(true)
     }
 }
 
@@ -44,34 +53,34 @@ pub struct GitignoreFilter {
 }
 
 impl GitignoreFilter {
-    pub fn new(path: &Path) -> Result<Self, git2::Error> {
+    pub fn new(path: &Path) -> result::Result<Self, git2::Error> {
         Repository::discover(path)
             .map(|repo| GitignoreFilter { repo: repo })
     }
 }
 
 impl FileFilter for GitignoreFilter {
-    fn filter(&self, path: &Path) -> bool {
+    fn filter(&self, path: &Path) -> Result {
         // ./filename paths doesn't seem to work with should_ignore
-        let path = path.canonicalize().expect("Failed to canonicalize path");
-        !self.repo.status_should_ignore(&path).unwrap_or(true)
+        let path = try!(path.canonicalize());
+        self.repo.status_should_ignore(&path)
+            .map(|x| !x)
+            .map_err(|err| From::from(err))
     }
 }
 
-pub fn filter_hidden_files(path: &Path) -> bool {
-    // Default to not filter if filename can't be retrieved or converted to utf-8
+pub fn filter_hidden_files(path: &Path) -> Result {
     path.file_name()
-        .map(|name| {
+        .and_then(|name| {
             name.to_str()
                 .map(|str| !str.starts_with("."))
-                .unwrap_or(true)
             })
-        .unwrap_or(true)
+        .ok_or(From::from("No file name."))
 }
 
-pub fn filter_non_dirs(path: &Path) -> bool {
+pub fn filter_non_dirs(path: &Path) -> Result {
     path.metadata()
         .map(|data| data.is_dir())
-        .unwrap_or(false)
+        .map_err(|err| From::from(err))
 }
 
