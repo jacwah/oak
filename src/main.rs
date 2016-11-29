@@ -62,7 +62,7 @@ fn main() {
     // if let Err(err) = tree::process(&dir, &mut procor, &filters) {
     //     die(&err);
     // }
-    if let Err(err) = tree::process2(&dir) {
+    if let Err(err) = tree::process2(dir, filters) {
         die(&err);
     }
 }

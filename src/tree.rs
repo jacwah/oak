@@ -11,19 +11,61 @@ pub struct Entry {
     has_next_sibling: bool,
 }
 
+/// An iterator yielding only the entries in dir where `file_filter` returns true.
+struct FilteredDir {
+    file_filter: Box<FileFilter>,
+    dir: fs::ReadDir,
+}
+
+impl Iterator for FilteredDir {
+    type Item = Result<fs::DirEntry, Box<Error>>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        loop {
+            let result = match self.dir.next() {
+                Some(result) => result,
+                None => return None,
+            };
+
+            let entry = match result {
+                Ok(entry) => entry,
+                Err(err) => return Some(Err(From::from(err))),
+            };
+
+            let should_yield = match self.file_filter.filter(entry.path().as_path()) {
+                Ok(should_yield) => should_yield,
+                Err(err) => return Some(Err(From::from(err))),
+            };
+
+            if should_yield {
+                return Some(Ok(entry));
+            }
+        }
+    }
+}
+
 pub struct TreeIter {
-    dir_stack: Vec<Peekable<fs::ReadDir>>,
+    dir_stack: Vec<Peekable<FilteredDir>>,
 }
 
 impl TreeIter {
-    pub fn new<P: AsRef<Path>>(path: P) -> Result<Self, Box<Error>> {
+    pub fn new<P, F>(path: P, file_filter: F) -> Result<Self, Box<Error>> where
+        P: AsRef<Path>,
+        F: FileFilter + 'static
+    {
         fs::read_dir(path)
-            .map(|dir| TreeIter { dir_stack: vec![dir.peekable()] })
+            .map(|dir| {
+                let filtered = FilteredDir {
+                    file_filter: Box::new(file_filter),
+                    dir: dir,
+                };
+                TreeIter { dir_stack: vec![filtered.peekable()] }
+            })
             .map_err(From::from)
     }
 }
 
-fn has_next_sibling(dir: &mut Peekable<fs::ReadDir>) -> bool {
+fn has_next_sibling<T, E, I: Iterator<Item=Result<T, E>>>(dir: &mut Peekable<I>) -> bool {
     loop {
         match dir.peek() {
             Some(result) => {
@@ -58,8 +100,8 @@ impl Iterator for TreeIter {
     }
 }
 
-pub fn process2(dir: &Path) -> Result<(), Box<Error>> {
-    for entry in try!(TreeIter::new(dir)) {
+pub fn process2<F: FileFilter + 'static>(dir: &Path, file_filter: F) -> Result<(), Box<Error>> {
+    for entry in try!(TreeIter::new(dir, file_filter)) {
         println!("{:?}", try!(entry));
     }
     Ok(())
