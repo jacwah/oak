@@ -83,4 +83,3 @@ pub fn filter_non_dirs(path: &Path) -> Result {
         .map(|data| data.is_dir())
         .map_err(|err| From::from(err))
 }
-
