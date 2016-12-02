@@ -4,6 +4,10 @@ version = "0.1.0"
 authors = ["Jacob Wahlgren <jacob.wahlgren@gmail.com>"]
 license = "MPL-2.0"
 
+[[bin]]
+name = "ntree"
+doc = false
+
 [dependencies]
 clap = "2"
 

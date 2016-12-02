@@ -75,12 +75,33 @@ impl Iterator for FilteredDir {
 }
 
 /// A filtered recursive directory iterator.
+///
+/// The iterator descends the tree depth first. This means that all of a directory's children
+/// will immediately follow thier parent. This essentially mirrors the output of this program.
+///
+/// # Example
+/// Given the following directory structure, the items would be returned from `TreeIter` in the
+/// same order.
+///
+/// ```text
+/// .
+/// ├── a
+/// ├── b
+/// │   ├── 1
+/// │   └── 2
+/// ├── c
+/// ├── d
+/// │   ├── 1
+/// │   └── 2
+/// └── e
+/// ```
 pub struct TreeIter {
     dir_stack: Vec<Peekable<FilteredDir>>,
     file_filter: Rc<FileFilter>,
 }
 
 impl TreeIter {
+    /// Create a new iterator with `path` as root.
     pub fn new<P, F>(path: P, file_filter: F) -> Result<Self, Box<Error>> where
         P: AsRef<Path>,
         F: FileFilter + 'static
