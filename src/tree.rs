@@ -1,4 +1,4 @@
-//! This module contains types for recursively walking the file system tree.
+//! Types for recursively walking the file system tree.
 
 use std::fs;
 use std::path::{Path, PathBuf};

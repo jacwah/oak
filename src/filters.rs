@@ -1,4 +1,4 @@
-//! This modules contains various file filters and abstractions for working with them.
+//! Various file filters and abstractions for working with them.
 
 extern crate git2;
 

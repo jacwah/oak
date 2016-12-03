@@ -1,12 +1,22 @@
+//! `PrintProcessor` and supporting types.
+//!
+//! This processor is designed to output in a format inspired by the classic `tree` command line
+//! utility.
+
 use std::borrow::Cow;
 use std::fmt::Display;
 use std::path::{Path, PathBuf};
 use super::tree_processor::TreeProcessor;
 use super::tree::Entry;
 
+/// A summary format for `PrintProcessor`.
 #[derive(Clone)]
 pub enum SummaryFormat {
+    /// Print only number of directories, e.g. "2 directories".
+    ///
+    /// This is useful if no files are expected, such as when using `filters::filter_non_dirs()`.
     DirCount,
+    /// Print both number of directories and files, e.g. "2 directories, 10 files".
     DirAndFileCount,
 }
 
@@ -49,6 +59,19 @@ impl PrintProcessorBuilder {
     }
 }
 
+/// A `TreeProcessor` for printing the events in a clasic `tree`-like format.
+///
+/// # Example
+/// This is an example of the output of this processor.
+///
+/// ```text
+/// ├── a
+/// ├── b
+/// │   ├── 1
+/// │   └── 2
+/// ├── c
+/// └── d
+/// ```
 pub struct PrintProcessor {
     dir_has_next: Vec<bool>,
     num_dirs: usize,

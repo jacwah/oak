@@ -1,3 +1,5 @@
+//! Contains the `TreeProcessor` trait.
+
 use std::error::Error;
 use super::tree::{TreeIter, Entry, Event};
 
