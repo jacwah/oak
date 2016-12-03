@@ -2,19 +2,7 @@ use std::borrow::Cow;
 use std::fmt::Display;
 use std::path::Path;
 use super::tree_processor::TreeProcessor;
-
-struct Dir {
-    num_entries: usize,
-    num_processed: usize,
-}
-
-impl Dir {
-    
-    fn new(num_entries: usize) -> Dir {
-        Dir { num_entries: num_entries, num_processed: 0 }
-    }
- 
-}
+use super::tree::Entry;
 
 pub enum SummaryFormat {
     DirCount,
@@ -22,49 +10,48 @@ pub enum SummaryFormat {
 }
 
 pub struct PrintProcessor {
-    dir_stack: Vec<Dir>,
+    dir_has_next: Vec<bool>,
     num_dirs: usize,
     num_files: usize,
     summary_format: SummaryFormat,
 }
 
-impl PrintProcessor {
-
-    pub fn new() -> PrintProcessor {
+impl Default for PrintProcessor {
+    fn default() -> PrintProcessor {
         PrintProcessor {
-            dir_stack: Vec::new(),
+            dir_has_next: Vec::default(),
             num_dirs: 0,
             num_files: 0,
             summary_format: SummaryFormat::DirAndFileCount,
         }
     }
+}
 
+impl PrintProcessor {
     pub fn set_summary_format(&mut self, format: SummaryFormat) {
         self.summary_format = format;
     }
 
-    fn print_entry<T: Display>(&mut self, name: &T) {
+    fn print_entry<D: Display>(&mut self, name: &D) {
         let vertical_line = "│   ";
         let branched_line = "├── ";
         let terminal_line = "└── ";
         let empty_line    = "    ";
 
-        for (i, dir) in self.dir_stack.iter().enumerate() {
-            if dir.num_processed == dir.num_entries {
-                print!("{}", empty_line);
-            } else if i == self.dir_stack.len() - 1 { // if the leaf dir
-                if dir.num_processed == dir.num_entries - 1 {
-                    print!("{}", terminal_line);
-                } else {
-                    print!("{}", branched_line);
-                }
-            } else {
-                print!("{}", vertical_line);
-            }
-        }
+        let len = self.dir_has_next.len();
 
-        if let Some(leaf_dir) = self.dir_stack.last_mut() {
-            leaf_dir.num_processed += 1;
+        for (i, has_next) in self.dir_has_next.iter().enumerate() {
+            if i < len - 1 {
+                if *has_next {
+                    print!("{}", vertical_line);
+                } else {
+                    print!("{}", empty_line);
+                }
+            } else if *has_next {
+                print!("{}", branched_line);
+            } else {
+                print!("{}", terminal_line);
+            }
         }
 
         println!("{}", name);
@@ -74,7 +61,7 @@ impl PrintProcessor {
         // Do not count the root dir or underflow
         let dirs = match self.num_dirs {
             0 => 0,
-            n @ _ => n - 1,
+            n => n - 1,
         };
 
         match self.summary_format {
@@ -92,31 +79,39 @@ fn file_name_from_path(path: &Path) -> Cow<str> {
 }
 
 impl TreeProcessor for PrintProcessor {
+    fn open_dir(&mut self, entry: &Entry) {
+        self.dir_has_next.pop();
+        self.dir_has_next.push(entry.has_next_sibling());
 
-    fn open_dir(&mut self, path: &Path, num_entries: usize) {
         // Print the relative path to the root dir
-        if self.dir_stack.is_empty() {
-            self.print_entry(&path.display());
+        if self.dir_has_next.is_empty() {
+            self.print_entry(&entry.path().display());
         } else {
-            self.print_entry(file_name_from_path(path).to_mut());
+            self.print_entry(file_name_from_path(entry.path()).to_mut());
         };
 
-        self.dir_stack.push(Dir::new(num_entries));
+        self.dir_has_next.push(true);
         self.num_dirs += 1;
     }
 
-    fn close_dir(&mut self) {
-        self.dir_stack.pop();
+    fn root(&mut self, path: &Path) {
+        self.dir_has_next.push(true);
+        println!("{}", path.display());
+    }
 
-        if self.dir_stack.is_empty() {
+    fn close_dir(&mut self) {
+        self.dir_has_next.pop().expect("Number of calls to close_dir exceeds open_dir");
+
+        if self.dir_has_next.is_empty() {
             self.print_summary();
         }
     }
 
-    fn file(&mut self, path: &Path) {
-        self.print_entry(file_name_from_path(path).to_mut());
+    fn file(&mut self, entry: &Entry) {
+        self.dir_has_next.pop();
+        self.dir_has_next.push(entry.has_next_sibling());
+
+        self.print_entry(file_name_from_path(entry.path()).to_mut());
         self.num_files += 1;
     }
-
 }
-

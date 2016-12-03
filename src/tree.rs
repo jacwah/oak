@@ -16,6 +16,20 @@ pub struct Entry {
     metadata: fs::Metadata,
 }
 
+impl Entry {
+    pub fn path(&self) -> &Path {
+        self.path.as_path()
+    }
+
+    pub fn has_next_sibling(&self) -> bool {
+        self.has_next_sibling
+    }
+
+    pub fn metadata(&self) -> &fs::Metadata {
+        &self.metadata
+    }
+}
+
 impl fmt::Debug for Entry {
     fn fmt(&self, formatter: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         formatter.debug_struct("Entry")

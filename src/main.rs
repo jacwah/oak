@@ -6,6 +6,7 @@ use std::path::Path;
 use std::process;
 use std::io::{Write, stderr};
 use std::fmt::Display;
+use ntree::tree_processor::TreeProcessor;
 use ntree::print_processor::{PrintProcessor, SummaryFormat};
 use ntree::tree;
 use ntree::filters::{FilterAggregate, filter_hidden_files, filter_non_dirs, GitignoreFilter};
@@ -37,7 +38,7 @@ fn main() {
 
     let dir = Path::new(argv_matches.value_of("DIR").unwrap_or("."));
     let mut filters = FilterAggregate::default();
-    let mut procor = PrintProcessor::new();
+    let mut procor = PrintProcessor::default();
 
     if !argv_matches.is_present("show-hidden") {
         filters.push(filter_hidden_files);
@@ -59,10 +60,9 @@ fn main() {
         }
     }
 
-    // if let Err(err) = tree::process(&dir, &mut procor, &filters) {
-    //     die(&err);
-    // }
-    if let Err(err) = tree::process(dir, filters) {
+    let mut tree_iter = tree::TreeIter::new(dir, filters).unwrap_or_else(|err| die(&err));
+    procor.root(dir);
+    if let Some(err) = procor.process(&mut tree_iter) {
         die(&err);
     }
 }
