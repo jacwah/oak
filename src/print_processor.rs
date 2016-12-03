@@ -106,15 +106,13 @@ impl PrintProcessor {
     }
 
     fn print_summary(&self) {
-        // Do not count the root dir or underflow
-        let dirs = match self.num_dirs {
-            0 => 0,
-            n => n - 1,
-        };
-
         match self.summary_format {
-            SummaryFormat::DirAndFileCount => println!("\n{} directories, {} files", dirs, self.num_files),
-            SummaryFormat::DirCount => println!("\n{} directories", dirs),
+            SummaryFormat::DirAndFileCount => {
+                println!("\n{} directories, {} files", self.num_dirs, self.num_files)
+            },
+            SummaryFormat::DirCount => {
+                println!("\n{} directories", self.num_dirs)
+            },
         }
     }
 
