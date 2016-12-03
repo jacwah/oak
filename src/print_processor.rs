@@ -1,12 +1,52 @@
 use std::borrow::Cow;
 use std::fmt::Display;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use super::tree_processor::TreeProcessor;
 use super::tree::Entry;
 
+#[derive(Clone)]
 pub enum SummaryFormat {
     DirCount,
     DirAndFileCount,
+}
+
+/// Builder for `PrintProcessor`.
+///
+/// One of the benefits of a separate builder struct is deferring the printing of root until after
+/// configuration. Thus no text is printed if a setup step fails.
+pub struct PrintProcessorBuilder {
+    summary_format: SummaryFormat,
+    root: PathBuf,
+}
+
+impl PrintProcessorBuilder {
+    /// Create a new builder.
+    pub fn new(root: PathBuf) -> Self {
+        PrintProcessorBuilder {
+            summary_format: SummaryFormat::DirAndFileCount,
+            root: root,
+        }
+    }
+
+    /// Set the summary format.
+    pub fn summary(&mut self, format: SummaryFormat) -> &mut Self{
+        self.summary_format = format;
+        self
+    }
+
+    /// Build a `PrintProcessor`.
+    ///
+    /// This method also prints the root, which sets up for subsequent output from the processor.
+    pub fn build(&self) -> PrintProcessor {
+        println!("{}", self.root.display());
+
+        PrintProcessor {
+            dir_has_next: vec![true],
+            num_dirs: 0,
+            num_files: 0,
+            summary_format: self.summary_format.clone(),
+        }
+    }
 }
 
 pub struct PrintProcessor {
@@ -17,20 +57,6 @@ pub struct PrintProcessor {
 }
 
 impl PrintProcessor {
-    pub fn new(root: &Path) -> PrintProcessor {
-        println!("{}", root.display());
-        PrintProcessor {
-            dir_has_next: vec![true],
-            num_dirs: 0,
-            num_files: 0,
-            summary_format: SummaryFormat::DirAndFileCount,
-        }
-    }
-
-    pub fn set_summary_format(&mut self, format: SummaryFormat) {
-        self.summary_format = format;
-    }
-
     fn print_entry<D: Display>(&mut self, name: &D) {
         let vertical_line = "│   ";
         let branched_line = "├── ";
