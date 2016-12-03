@@ -64,14 +64,14 @@ impl FilteredDir {
     pub fn new<P>(path: P, file_filter: Rc<FileFilter>) -> Result<Self, Box<Error>> where
         P: AsRef<Path>,
     {
-        fs::read_dir(path)
+        fs::read_dir(&path)
             .map(|dir| {
                 FilteredDir {
                     file_filter: file_filter,
                     dir: dir,
                 }
             })
-            .map_err(From::from)
+            .map_err(|err| From::from(format!("Failed to read dir '{}': {}", path.as_ref().display(), err)))
     }
 }
 
