@@ -6,31 +6,37 @@ use std::rc::Rc;
 use std::fmt;
 use super::filters::FileFilter;
 
+/// Events yielded from `TreeIter`.
+#[derive(Debug)]
 pub enum Event {
+    /// Any non-direcotry file in the current directory.
     File(Entry),
+    /// A directory contained within the current directory. This is the new current directory.
     OpenDir(Entry),
+    /// Signals end of current directory. The parent becomes the new current directory.
     CloseDir,
 }
 
 /// Represents an entry in the file system.
 pub struct Entry {
     path: PathBuf,
-    /// Whether the iterator that yielded this entry has more sibling (same directory) entries.
     has_next_sibling: bool,
-    /// A cached metadata entry for this file. It's probably better to use this than
-    /// calling `fs::metadata` on `path`.
     metadata: fs::Metadata,
 }
 
 impl Entry {
+    /// Path to the entry, relative to its root.
     pub fn path(&self) -> &Path {
         self.path.as_path()
     }
 
+    /// Whether the iterator that yielded this entry has more sibling (same directory) entries.
     pub fn has_next_sibling(&self) -> bool {
         self.has_next_sibling
     }
 
+    /// A cached metadata entry for this file. It's probably better to use this than
+    /// calling `fs::metadata` on `path`.
     pub fn metadata(&self) -> &fs::Metadata {
         &self.metadata
     }
@@ -100,20 +106,30 @@ impl Iterator for FilteredDir {
 /// will immediately follow thier parent. This essentially mirrors the output of this program.
 ///
 /// # Example
-/// Given the following directory structure, the items would be returned from `TreeIter` in the
-/// same order.
+/// Given the following directory structure, where directories are denoted by a trailing slash,
+/// the items would be returned from `TreeIter` in the same order.
 ///
 /// ```text
 /// .
 /// ├── a
-/// ├── b
+/// ├── b/
 /// │   ├── 1
 /// │   └── 2
-/// ├── c
-/// ├── d
-/// │   ├── 1
-/// │   └── 2
-/// └── e
+/// ├── c/
+/// └── d
+/// ```
+///
+/// This would be the yielded events, in order:
+///
+/// ```text
+/// File(a)
+/// OpenDir(b)
+/// File(1)
+/// File(2)
+/// CloseDir
+/// OpenDir(c)
+/// CloseDir
+/// File(d)
 /// ```
 pub struct TreeIter {
     dir_stack: Vec<Peekable<FilteredDir>>,
