@@ -204,8 +204,6 @@ impl Iterator for TreeIter {
         let entry;
 
         loop {
-            let mut close_dir = false;
-
             match self.dir_stack.as_mut_slice().last_mut() {
                 Some(dir) => {
                     match next_entry(dir) {
@@ -214,10 +212,8 @@ impl Iterator for TreeIter {
                             break;
                         },
                         Some(Err(err)) => return Some(Err(err)),
-                        None => {
-                            // Top dir is empty, go down a level
-                            close_dir = true;
-                        },
+                        // Top dir is empty, go down a level by falling through
+                        None => {},
                     }
                 },
                 // We reached top of dir stack
@@ -225,10 +221,8 @@ impl Iterator for TreeIter {
             };
 
             // Pop here to avoid multiple mutable references
-            if close_dir {
-                self.dir_stack.pop();
-                return Some(Ok(Event::CloseDir));
-            }
+            self.dir_stack.pop();
+            return Some(Ok(Event::CloseDir));
         };
 
         if entry.metadata.is_dir() {
