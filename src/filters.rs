@@ -39,8 +39,8 @@ impl Default for FilterAggregate {
 
 impl FileFilter for FilterAggregate {
     fn filter(&self, path: &Path) -> Result {
-        for f in self.filters.iter() {
-            if try!(f.filter(path)) == false {
+        for f in &self.filters {
+            if !try!(f.filter(path)) {
                 return Ok(false);
             }
         }
@@ -65,7 +65,7 @@ impl FileFilter for GitignoreFilter {
         let path = try!(path.canonicalize());
         self.repo.status_should_ignore(&path)
             .map(|x| !x)
-            .map_err(|err| From::from(err))
+            .map_err(From::from)
     }
 }
 
@@ -73,13 +73,13 @@ pub fn filter_hidden_files(path: &Path) -> Result {
     path.file_name()
         .and_then(|name| {
             name.to_str()
-                .map(|str| !str.starts_with("."))
+                .map(|str| !str.starts_with('.'))
             })
-        .ok_or(From::from("No file name."))
+        .ok_or_else(|| From::from("No file name."))
 }
 
 pub fn filter_non_dirs(path: &Path) -> Result {
     path.metadata()
         .map(|data| data.is_dir())
-        .map_err(|err| From::from(err))
+        .map_err(From::from)
 }
