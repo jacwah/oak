@@ -6,6 +6,12 @@ use std::rc::Rc;
 use std::fmt;
 use super::filters::FileFilter;
 
+pub enum Event {
+    File(Entry),
+    OpenDir(Entry),
+    CloseDir,
+}
+
 /// Represents an entry in the file system.
 pub struct Entry {
     path: PathBuf,
@@ -174,13 +180,13 @@ fn next_entry(dir: &mut Peekable<FilteredDir>) -> Option<Result<Entry, Box<Error
 }
 
 impl Iterator for TreeIter {
-    type Item = Result<Entry, Box<Error>>;
+    type Item = Result<Event, Box<Error>>;
 
     fn next(&mut self) -> Option<Self::Item> {
         let entry;
 
         loop {
-            let mut should_pop = false;
+            let mut close_dir = false;
 
             match self.dir_stack.as_mut_slice().last_mut() {
                 Some(dir) => {
@@ -192,7 +198,7 @@ impl Iterator for TreeIter {
                         Some(Err(err)) => return Some(Err(err)),
                         None => {
                             // Top dir is empty, go down a level
-                            should_pop = true;
+                            close_dir = true;
                         },
                     }
                 },
@@ -200,8 +206,10 @@ impl Iterator for TreeIter {
                 None => return None,
             };
 
-            if should_pop {
+            // Pop here to avoid multiple mutable references
+            if close_dir {
                 self.dir_stack.pop();
+                return Some(Ok(Event::CloseDir));
             }
         };
 
@@ -210,15 +218,10 @@ impl Iterator for TreeIter {
                 Ok(dir) => self.dir_stack.push(dir.peekable()),
                 Err(err) => return Some(Err(From::from(err))),
             };
-        };
 
-        Some(Ok(entry))
+            Some(Ok(Event::OpenDir(entry)))
+        } else {
+            Some(Ok(Event::File(entry)))
+        }
     }
-}
-
-pub fn process<F: FileFilter + 'static>(dir: &Path, file_filter: F) -> Result<(), Box<Error>> {
-    for entry in try!(TreeIter::new(dir, file_filter)) {
-        println!("{:?}", try!(entry));
-    }
-    Ok(())
 }

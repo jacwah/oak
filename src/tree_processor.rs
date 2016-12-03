@@ -1,6 +1,6 @@
 use std::error::Error;
 use std::path::Path;
-use super::tree::{TreeIter, Entry};
+use super::tree::{TreeIter, Entry, Event};
 
 pub trait TreeProcessor {
     fn open_dir(&mut self, entry: &Entry);
@@ -11,19 +11,12 @@ pub trait TreeProcessor {
     fn process(&mut self, tree: &mut TreeIter) -> Option<Box<Error>> {
         for result in tree {
             match result {
-                Ok(entry) => {
-                    if entry.metadata().is_dir() {
-                        println!("open_dir");
-                        self.open_dir(&entry);
-                    } else {
-                        println!("file");
-                        self.file(&entry);
+                Ok(event) => {
+                    match event {
+                        Event::OpenDir(ref entry) => self.open_dir(entry),
+                        Event::File(ref entry) => self.file(entry),
+                        Event::CloseDir => self.close_dir(),
                     };
-
-                    if !entry.has_next_sibling() {
-                        println!("close_dir");
-                        self.close_dir();
-                    }
                 },
                 Err(err) => return Some(err),
             };
