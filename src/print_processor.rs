@@ -16,18 +16,17 @@ pub struct PrintProcessor {
     summary_format: SummaryFormat,
 }
 
-impl Default for PrintProcessor {
-    fn default() -> PrintProcessor {
+impl PrintProcessor {
+    pub fn new(root: &Path) -> PrintProcessor {
+        println!("{}", root.display());
         PrintProcessor {
-            dir_has_next: Vec::default(),
+            dir_has_next: vec![true],
             num_dirs: 0,
             num_files: 0,
             summary_format: SummaryFormat::DirAndFileCount,
         }
     }
-}
 
-impl PrintProcessor {
     pub fn set_summary_format(&mut self, format: SummaryFormat) {
         self.summary_format = format;
     }
@@ -92,11 +91,6 @@ impl TreeProcessor for PrintProcessor {
 
         self.dir_has_next.push(true);
         self.num_dirs += 1;
-    }
-
-    fn root(&mut self, path: &Path) {
-        self.dir_has_next.push(true);
-        println!("{}", path.display());
     }
 
     fn close_dir(&mut self) {

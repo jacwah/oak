@@ -1,13 +1,16 @@
 use std::error::Error;
-use std::path::Path;
 use super::tree::{TreeIter, Entry, Event};
 
+/// A generic trait for processing the output of `TreeIter`.
 pub trait TreeProcessor {
+    /// Called for each `OpenDir` event.
     fn open_dir(&mut self, entry: &Entry);
+    /// Called for each `CloseDir` event.
     fn close_dir(&mut self);
+    /// Called for each `File` event.
     fn file(&mut self, entry: &Entry);
-    fn root(&mut self, path: &Path);
 
+    /// Iterates thorugh a `TreeIter`, delegating each event to its respective method.
     fn process(&mut self, tree: &mut TreeIter) -> Option<Box<Error>> {
         for result in tree {
             match result {

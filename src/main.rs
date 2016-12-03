@@ -38,7 +38,7 @@ fn main() {
 
     let dir = Path::new(argv_matches.value_of("DIR").unwrap_or("."));
     let mut filters = FilterAggregate::default();
-    let mut procor = PrintProcessor::default();
+    let mut procor = PrintProcessor::new(dir);
 
     if !argv_matches.is_present("show-hidden") {
         filters.push(filter_hidden_files);
@@ -61,7 +61,6 @@ fn main() {
     }
 
     let mut tree_iter = tree::TreeIter::new(dir, filters).unwrap_or_else(|err| die(&err));
-    procor.root(dir);
     if let Some(err) = procor.process(&mut tree_iter) {
         die(&err);
     }
