@@ -9,7 +9,7 @@ use std::fmt::Display;
 use ntree::tree_processor::TreeProcessor;
 use ntree::print_processor::{PrintProcessorBuilder, SummaryFormat};
 use ntree::tree;
-use ntree::filters::{FilterAggregate, filter_hidden_files, filter_non_dirs, GitignoreFilter};
+use ntree::filters::{FilterAggregate, filter_hidden_files, filter_non_dirs, GitignoreFilter, GlobFilter};
 
 fn die(message: &Display) -> ! {
     writeln!(&mut stderr(), "error: {}", message).expect("Failed to write to stderr");
@@ -34,6 +34,19 @@ fn main() {
              .help("Do not exclude gitignored files")
              .long("no-git")
              .short("g"))
+        .arg(clap::Arg::with_name("glob-include")
+            .help("Include only files matching a glob pattern")
+            .short("P")
+            .conflicts_with("glob-exclude")
+            .multiple(true)
+            .number_of_values(1)
+            .takes_value(true))
+        .arg(clap::Arg::with_name("glob-exclude")
+            .help("Exclude files matching a glob pattern")
+            .short("I")
+            .multiple(true)
+            .number_of_values(1)
+            .takes_value(true))
         .get_matches();
 
     let dir = Path::new(argv_matches.value_of("DIR").unwrap_or("."));
@@ -59,6 +72,23 @@ fn main() {
             },
             None => {},
         }
+    }
+
+    // This is a mess!!
+    if let Some(patterns) = argv_matches.values_of("glob-include") {
+        let result = GlobFilter::from(patterns.map(From::from), false);
+
+        match result {
+            Ok(filter) => filters.push(filter),
+            Err(err) => die(&err),
+        };
+    } else if let Some(patterns) = argv_matches.values_of("glob-exclude") {
+        let result = GlobFilter::from(patterns.map(From::from), true);
+
+        match result {
+            Ok(filter) => filters.push(filter),
+            Err(err) => die(&err),
+        };
     }
 
     let mut tree_iter = tree::TreeIter::new(dir, filters).unwrap_or_else(|err| die(&err));

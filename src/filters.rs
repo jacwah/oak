@@ -1,9 +1,11 @@
 //! Various file filters and abstractions for working with them.
 
 extern crate git2;
+extern crate globset;
 
 use std::path::Path;
 use self::git2::Repository;
+use self::globset::{Glob, GlobSet, GlobSetBuilder};
 use std::result;
 use std::error::Error;
 
@@ -53,6 +55,84 @@ impl FileFilter for FilterAggregate {
         Ok(true)
     }
 }
+
+/// Builder for `GlobFilter`.
+pub struct GlobFilterBuilder {
+    patterns: Vec<String>,
+    invert: bool,
+}
+
+impl GlobFilterBuilder {
+    /// Create a new builder.
+    ///
+    /// If `invert` is true, matches are inverted.
+    pub fn new(invert: bool) -> Self {
+        GlobFilterBuilder {
+            patterns: Vec::new(),
+            invert: invert
+        }
+    }
+
+    /// Add a pattern to the builder.
+    pub fn add(&mut self, pattern: String) -> &mut Self {
+        self.patterns.push(pattern);
+        self
+    }
+
+    /// Build a `GlobFilter` from the set options.
+    pub fn build(&self) -> result::Result<GlobFilter, Box<Error>> {
+        let mut builder = GlobSetBuilder::new();
+
+        for pattern in &self.patterns {
+            builder.add(try!(Glob::new(&pattern)));
+        }
+
+        builder.build()
+            .map(|set| GlobFilter {
+                pattern: set,
+                invert: self.invert,
+            })
+            .map_err(From::from)
+    }
+}
+
+/// Filter by glob pattern.
+pub struct GlobFilter {
+    pattern: GlobSet,
+    invert: bool,
+}
+
+impl GlobFilter {
+    /// Create a new glob filter from an iterator of `String` patterns.
+    ///
+    /// If `invert` is true, matches are inverted.
+    pub fn from<I: Iterator<Item=String>>(patterns: I, invert: bool) -> result::Result<GlobFilter, Box<Error>> {
+        let mut builder = GlobFilterBuilder::new(invert);
+
+        for pattern in patterns {
+            builder.add(pattern);
+        }
+
+        builder.build()
+    }
+}
+
+
+impl FileFilter for GlobFilter {
+    fn filter(&self, path: &Path) -> Result {
+        let path = path.strip_prefix("./").unwrap_or(path);
+        let is_match = self.pattern.is_match(path);
+
+        Ok(
+            if self.invert {
+                !is_match
+            } else {
+                is_match
+            }
+        )
+    }
+}
+
 
 /// Exclude files ignored by git.
 pub struct GitignoreFilter {
