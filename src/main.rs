@@ -51,12 +51,13 @@ fn main() {
 
     if !argv_matches.is_present("no-git-ignore") {
         match GitignoreFilter::new(dir) {
-            Ok(filter) => {
+            Some(Ok(filter)) => {
                 filters.push(filter);
             },
-            Err(err) => {
+            Some(Err(err)) => {
                 die(&err);
             },
+            None => {},
         }
     }
 

@@ -61,9 +61,22 @@ pub struct GitignoreFilter {
 
 impl GitignoreFilter {
     /// Create a new filter rooted at `path`.
-    pub fn new(path: &Path) -> result::Result<Self, git2::Error> {
-        Repository::discover(path)
-            .map(|repo| GitignoreFilter { repo: repo })
+    pub fn new(path: &Path) -> Option<result::Result<GitignoreFilter, Box<Error>>> {
+        let result = Repository::discover(path)
+            .map(|repo| GitignoreFilter { repo: repo });
+
+        match result {
+            Err(err) => {
+                if err.code() == git2::ErrorCode::NotFound {
+                    None
+                } else {
+                    Some(Err(From::from(err)))
+                }
+            },
+            Ok(repo) => {
+                Some(Ok(repo))
+            },
+        }
     }
 }
 
