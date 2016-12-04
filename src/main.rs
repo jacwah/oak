@@ -1,15 +1,15 @@
 #[macro_use]
 extern crate clap;
-extern crate ntree;
+extern crate oak;
 
 use std::path::Path;
 use std::process;
 use std::io::{Write, stderr};
 use std::fmt::Display;
-use ntree::tree_processor::TreeProcessor;
-use ntree::print_processor::{PrintProcessorBuilder, SummaryFormat};
-use ntree::tree;
-use ntree::filters::{FilterAggregate, filter_hidden_files, filter_non_dirs, GitignoreFilter, GlobFilter};
+use oak::tree_processor::TreeProcessor;
+use oak::print_processor::{PrintProcessorBuilder, SummaryFormat};
+use oak::tree;
+use oak::filters::{FilterAggregate, filter_hidden_files, filter_non_dirs, GitignoreFilter, GlobFilter};
 
 fn die(message: &Display) -> ! {
     writeln!(&mut stderr(), "error: {}", message).expect("Failed to write to stderr");
@@ -17,10 +17,10 @@ fn die(message: &Display) -> ! {
 }
 
 fn main() {
-    let argv_matches = clap::App::new("ntree")
+    let argv_matches = clap::App::new("Oak")
         .version(crate_version!())
         .author(crate_authors!())
-        .about("Tree for the modern user.")
+        .about("A recursive directory listing utility for the modern age.")
         .arg(clap::Arg::with_name("DIR")
             .help("The directory to list, defaults to cwd")
             .index(1))
