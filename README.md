@@ -2,6 +2,9 @@
 `oak` is a modern reincarnation of the classic command line utility `tree`.
 It recursively lists directories and files, visualizing their hierarchy.
 
+This project is in an experimental stage and I'll happily respond to issues and
+pull requests within a couple of days.
+
 ## Basic usage
 
 ```
