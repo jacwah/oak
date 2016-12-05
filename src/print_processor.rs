@@ -106,12 +106,24 @@ impl PrintProcessor {
     }
 
     fn print_summary(&self) {
+        let dirs = if self.num_dirs == 1 {
+            "directory"
+        } else {
+            "directories"
+        };
+
+        let files = if self.num_files == 1 {
+            "file"
+        } else {
+            "files"
+        };
+
         match self.summary_format {
             SummaryFormat::DirAndFileCount => {
-                println!("\n{} directories, {} files", self.num_dirs, self.num_files)
+                println!("\n{} {}, {} {}", self.num_dirs, dirs, self.num_files, files)
             },
             SummaryFormat::DirCount => {
-                println!("\n{} directories", self.num_dirs)
+                println!("\n{} {}", self.num_dirs, dirs)
             },
         }
     }
