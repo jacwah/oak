@@ -211,29 +211,21 @@ impl Iterator for TreeIter {
             }
         }
 
-        let entry;
+        let entry = self.dir_stack.last_mut().map(next_entry);
 
-        loop {
-            match self.dir_stack.as_mut_slice().last_mut() {
-                Some(dir) => {
-                    match next_entry(dir) {
-                        Some(Ok(the_entry)) => {
-                            entry = the_entry;
-                            break;
-                        }
-                        Some(Err(err)) => return Some(Err(err)),
-                        // Top dir is empty, go down a level by falling through
-                        None => {}
-                    }
-                }
-                // We reached top of dir stack
-                None => return None,
-            };
-
-            // Pop here to avoid multiple mutable references
-            self.dir_stack.pop();
-            return Some(Ok(Event::CloseDir));
-        }
+        let entry = match entry {
+            // dir_stack is empty, we are finished
+            None => return None,
+            // No more children in this directory, pop and close
+            Some(None) => {
+                self.dir_stack.pop();
+                return Some(Ok(Event::CloseDir));
+            },
+            // Error encountered while finding next sibling
+            Some(Some(Err(err))) => return Some(Err(err)),
+            // Successful next entry
+            Some(Some(Ok(e))) => e,
+        };
 
         if entry.metadata.is_dir() {
             match FilteredDir::new(&entry.path, self.file_filter.clone()) {
