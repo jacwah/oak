@@ -2,14 +2,15 @@
 extern crate clap;
 extern crate oak;
 
-use std::path::Path;
-use std::process;
-use std::io::{Write, stderr};
-use std::fmt::Display;
-use oak::tree_processor::TreeProcessor;
+use oak::filters::{filter_hidden_files, filter_non_dirs, FilterAggregate, GitignoreFilter,
+                   GlobFilter};
 use oak::print_processor::{PrintProcessorBuilder, SummaryFormat};
 use oak::tree;
-use oak::filters::{FilterAggregate, filter_hidden_files, filter_non_dirs, GitignoreFilter, GlobFilter};
+use oak::tree_processor::TreeProcessor;
+use std::fmt::Display;
+use std::io::{stderr, Write};
+use std::path::Path;
+use std::process;
 
 fn die(message: &Display) -> ! {
     writeln!(&mut stderr(), "error: {}", message).expect("Failed to write to stderr");
@@ -47,6 +48,14 @@ fn main() {
             .multiple(true)
             .number_of_values(1)
             .takes_value(true))
+        .arg(clap::Arg::with_name("level")
+            .help("Max display depth of directory tree.")
+            .short("L")
+            .long("level")
+            .multiple(false)
+            .number_of_values(1)
+            .takes_value(true),
+        )
         .get_matches();
 
     let dir = Path::new(argv_matches.value_of("DIR").unwrap_or("."));
@@ -66,11 +75,11 @@ fn main() {
         match GitignoreFilter::new(dir) {
             Some(Ok(filter)) => {
                 filters.push(filter);
-            },
+            }
             Some(Err(err)) => {
                 die(&err);
-            },
-            None => {},
+            }
+            None => {}
         }
     }
 
@@ -91,7 +100,19 @@ fn main() {
         };
     }
 
-    let mut tree_iter = tree::TreeIter::new(dir, filters).unwrap_or_else(|err| die(&err));
+    let max_depth = {
+        let result = argv_matches.value_of("level").map(|s| s.parse::<usize>());
+
+        match result {
+            None => None,
+            Some(Err(err)) => die(&err),
+            Some(Ok(level)) => Some(level),
+        }
+    };
+
+    let mut tree_iter =
+        tree::TreeIter::new(dir, filters, max_depth).unwrap_or_else(|err| die(&err));
+
     if let Some(err) = procor.build().process(&mut tree_iter) {
         die(&err);
     }

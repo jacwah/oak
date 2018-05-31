@@ -1,12 +1,12 @@
 //! Types for recursively walking the file system tree.
 
-use std::fs;
-use std::path::{Path, PathBuf};
-use std::error::Error;
-use std::iter::Peekable;
-use std::rc::Rc;
-use std::fmt;
 use super::filters::FileFilter;
+use std::error::Error;
+use std::fmt;
+use std::fs;
+use std::iter::Peekable;
+use std::path::{Path, PathBuf};
+use std::rc::Rc;
 
 /// Events yielded from `TreeIter`.
 #[derive(Debug)]
@@ -135,14 +135,16 @@ impl Iterator for FilteredDir {
 /// ```
 pub struct TreeIter {
     dir_stack: Vec<Peekable<FilteredDir>>,
+    max_depth: Option<usize>,
     file_filter: Rc<FileFilter>,
 }
 
 impl TreeIter {
     /// Create a new iterator with `path` as root.
-    pub fn new<P, F>(path: P, file_filter: F) -> Result<Self, Box<Error>> where
+    pub fn new<P, F>(path: P, file_filter: F, max_depth: Option<usize>) -> Result<Self, Box<Error>>
+    where
         P: AsRef<Path>,
-        F: FileFilter + 'static
+        F: FileFilter + 'static,
     {
         let rc_filter = Rc::new(file_filter);
 
@@ -154,6 +156,7 @@ impl TreeIter {
                 };
                 TreeIter {
                     dir_stack: vec![filtered.peekable()],
+                    max_depth: max_depth,
                     file_filter: rc_filter,
                 }
             })
@@ -161,14 +164,14 @@ impl TreeIter {
     }
 }
 
-fn has_next_sibling<T, E, I: Iterator<Item=Result<T, E>>>(dir: &mut Peekable<I>) -> bool {
+fn has_next_sibling<T, E, I: Iterator<Item = Result<T, E>>>(dir: &mut Peekable<I>) -> bool {
     loop {
         match dir.peek() {
             Some(result) => {
                 if result.is_ok() {
                     return true;
                 }
-            },
+            }
             None => {
                 return false;
             }
@@ -201,6 +204,13 @@ impl Iterator for TreeIter {
     type Item = Result<Event, Box<Error>>;
 
     fn next(&mut self) -> Option<Self::Item> {
+        if let Some(max) = self.max_depth {
+            if max < self.dir_stack.len() {
+                self.dir_stack.pop();
+                return Some(Ok(Event::CloseDir));
+            }
+        }
+
         let entry;
 
         loop {
@@ -210,12 +220,12 @@ impl Iterator for TreeIter {
                         Some(Ok(the_entry)) => {
                             entry = the_entry;
                             break;
-                        },
+                        }
                         Some(Err(err)) => return Some(Err(err)),
                         // Top dir is empty, go down a level by falling through
-                        None => {},
+                        None => {}
                     }
-                },
+                }
                 // We reached top of dir stack
                 None => return None,
             };
@@ -223,7 +233,7 @@ impl Iterator for TreeIter {
             // Pop here to avoid multiple mutable references
             self.dir_stack.pop();
             return Some(Ok(Event::CloseDir));
-        };
+        }
 
         if entry.metadata.is_dir() {
             match FilteredDir::new(&entry.path, self.file_filter.clone()) {
